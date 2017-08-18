@@ -1,0 +1,3 @@
+declare -A routes=(
+  [/admin]=./controllers/admin
+)

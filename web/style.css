@@ -1,0 +1,16 @@
+.rectangle_wrapper {
+    width: 100%;
+    height: 100px;
+    background-color: #acdbf3;
+}
+
+.rectangle {
+    width: 100px;
+    height: 100%;
+    margin: 0 auto;
+    background-color: red;
+    color: white;
+    text-align: center;
+    line-height: 100px;
+    cursor: pointer;
+}

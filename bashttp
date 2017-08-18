@@ -1,0 +1,219 @@
+#!/bin/bash
+
+# Include config array
+source config
+
+declare -A systemColors=(
+    [no]='\033[0m'
+    [red]='\033[0;31m'
+    [green]='\033[0;32m'
+    [orange]='\033[0;33m'
+)
+
+script_name() { basename "$0"; }
+date_time() { date +"%Y-%m-%d %T"; }
+
+log() { if [ ${config[is_logging]} -eq 1 ]; then echo "$@" >> "${config[log_file]}"; fi }
+
+msg() { echo "$(date_time) MSG: $@"; }
+err() { echo -e "${systemColors[red]}$(date_time) ERROR: $@${systemColors[no]}" >&2; }
+info() { echo -e "${systemColors[orange]}$(date_time) INFO: $@${systemColors[no]}" >&1; }
+succ() { echo -e "${systemColors[green]}$(date_time) SUCCESS: $@${systemColors[no]}" >&1; }
+
+start() {
+    info "Starting server on ${config[ip]}:${config[port]}"
+    tcpserver "${config[ip]}" "${config[port]}" "./$(script_name)" connection_handler
+}
+
+
+SERVER_REQUEST_PROTOCOL="HTTP/1.1"
+declare -A SERVER_REQUEST_METHODS=(
+    [HEAD]=HEAD
+    [GET]=GET
+    [POST]=POST
+    [PUT]=PUT
+    [DELETE]=DELETE
+)
+
+declare -A SERVER_RESPONSES=(
+    [200]=OK
+    [400]="Bad Request"
+    [401]=Unauthorized
+    [403]=Forbidden
+    [404]="Not Found"
+    [405]="Method Not Allowed"
+    [500]="Internal Server Error"
+)
+
+
+declare -A REQUEST_HEADERS
+declare -A RESPONSE_HEADERS
+
+# Include routes array
+source routes
+
+
+request() {
+    log "Request begin"
+
+    # Read start line
+    read -t "${config[timeout]}" -r request_start_line
+
+    start_line="$(echo $request_start_line| tr -d '\r')"
+    if (($(echo $start_line | wc -w) != 3)); then
+        log "400 (Bad Request)"
+
+        response 400
+
+        exit 0
+    fi
+
+    REQUEST_PROTOCOL="$(echo $start_line| cut -d ' ' -f 3)"
+    if [ $REQUEST_PROTOCOL != $SERVER_REQUEST_PROTOCOL ]; then
+        log "400 (Bad Request)"
+        
+        response 400
+
+        exit 0
+    fi
+
+    REQUEST_METHOD="$(echo $start_line| cut -d ' ' -f 1)"
+    if [ ! ${SERVER_REQUEST_METHODS[$REQUEST_METHOD]} ]; then
+        log "405 (Method Not Allowed)"
+
+        response 405
+
+        exit 0
+    fi
+
+    REQUEST_ROUTE="$(echo $start_line| cut -d ' ' -f 2| tr /A-Z/ /a-z/)"
+
+    log "route: $REQUEST_ROUTE"
+    log "method: $REQUEST_METHOD"
+    log "protocol: $REQUEST_PROTOCOL"
+
+
+    # Read headers
+    while read -t "${config[timeout]}" -r request_header; do
+        header="$(echo $request_header| tr -d '\r')"
+
+        # break on empty string
+        [ -z "$header" ] && break
+
+        header_key="$(echo $header| cut -d ':' -f 1)"
+        header_value="$(echo $header| cut -d ' ' -f 2-)"
+
+        REQUEST_HEADERS[$header_key]=$header_value
+
+        log "header: [$header_key]=$header_value"
+    done
+
+    # Read message-body if Content-Length header is presented
+    if [ ${REQUEST_HEADERS[Content-Length]} ]; then
+        # Read message-body to buffer
+        read -t "${config[timeout]}" -r request_body
+
+        # Cut data from buffer with length specified
+        REQUEST_BODY="$(printf "%s" $REQUEST_BODY| tr -d '\r'| cut -c -${REQUEST_HEADERS[Content-Length]})"
+
+        log "body: $REQUEST_BODY"
+    fi
+
+    log "Request end"
+}
+
+response() {
+    status_code=$1
+    # if [ ! ${SERVER_RESPONSES[$status_code]} ]; then
+    #     status_code=500
+    # fi
+
+    status_line="$(printf "%s %u %s" "$SERVER_REQUEST_PROTOCOL" "$status_code" "${SERVER_RESPONSES[$status_code]}")"
+    RESPONSE_HEADERS[Server]="${config[server_name]}"
+    RESPONSE_HEADERS[Date]="$(date_time)"
+    RESPONSE_HEADERS[Connection]=close
+
+    # send response
+    echo -n "$status_line"
+    echo -en "\r\n"
+    response_headers_string=""
+    for key in "${!RESPONSE_HEADERS[@]}"; do
+        echo -en "$key: "${RESPONSE_HEADERS["$key"]}"\r\n"
+        response_headers_string+="$key: "${RESPONSE_HEADERS["$key"]}"; "
+    done
+    echo -en "\r\n"
+    echo -n "$response_message_body"
+    echo -en "\r\n"
+
+    log "Response begin"
+    log "status-line: $status_line"
+    log "headers: $response_headers_string"
+    log "message-body: $response_message_body"
+    log "Response end"
+}
+
+try_route() {
+    # To do
+    return -1
+}
+
+setMesageBody() {
+    response_message_body="$(<"$1")"
+}
+
+setContentLength() {
+    RESPONSE_HEADERS[Content-Length]="$(wc -c <"$1")"
+}
+
+setContentType() {
+    extension="$(basename $1| rev | cut -d . -f 1 | rev)"
+
+    case "$extension" in
+        css) type="text/css" ;;
+        js) type="text/javascript" ;;
+        json) type="application/json" ;;
+        *) type="$<(file -b --mime-type "$1")" ;;
+    esac
+
+    RESPONSE_HEADERS[Content-Type]=type
+}
+
+try_file() {
+    root="${config[web_root]}"
+    path="$REQUEST_ROUTE"
+
+    target="$root$path"
+
+    if [ -d $target ]; then
+        target+="/index.html"
+    fi
+
+    if [ -f $target ]; then
+        setMesageBody "$target"
+        setContentType "$target"
+        setContentLength "$target"
+        
+        return 200
+    fi
+
+    return -1
+}
+
+try_request() {
+    try_route || try_file
+    status=$?
+
+    if [ $status -eq -1 ]; then
+        return 404
+    fi
+    
+    return $status
+}
+
+connection_handler() {
+    request
+    try_request
+    response $?
+}
+
+$@

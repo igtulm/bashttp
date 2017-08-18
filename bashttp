@@ -157,15 +157,15 @@ try_route() {
     return -1
 }
 
-setMesageBody() {
+setFileMesageBody() {
     response_message_body="$(<"$1")"
 }
 
-setContentLength() {
+setFileContentLength() {
     RESPONSE_HEADERS[Content-Length]="$(wc -c <"$1")"
 }
 
-setContentType() {
+setFileContentType() {
     extension="$(basename $1| rev | cut -d . -f 1 | rev)"
 
     case "$extension" in
@@ -189,9 +189,9 @@ try_file() {
     fi
 
     if [ -f $target ]; then
-        setMesageBody "$target"
-        setContentType "$target"
-        setContentLength "$target"
+        setFileMesageBody "$target"
+        setFileContentType "$target"
+        setFileContentLength "$target"
         
         return 200
     fi
@@ -202,6 +202,7 @@ try_file() {
 try_request() {
     try_route || try_file
     status=$?
+    log $LINENO $status
 
     if [ $status -eq -1 ]; then
         return 404

@@ -47,7 +47,7 @@ REQUEST_BODY=
 
 # RESPONSE vars
 declare -A RESPONSE_HEADERS
-RESPONSE_CODE=404
+RESPONSE_CODE=
 RESPONSE_MESSAGE_BODY=
 
 
@@ -165,6 +165,7 @@ response() {
 }
 
 try_route() {
+    RESPONSE_CODE=404
     # To do
     return -1
 }
@@ -192,6 +193,8 @@ setFileContentType() {
 }
 
 try_file() {
+    RESPONSE_CODE=404
+
     local root="${config[web_root]}"
     local path="$REQUEST_ROUTE"
 

@@ -1,32 +1,24 @@
 #!/bin/bash
 
-# Include config array
+source libs/console
+
 source config
+source routes
 
-declare -A systemColors=(
-    [no]='\033[0m'
-    [red]='\033[0;31m'
-    [green]='\033[0;32m'
-    [orange]='\033[0;33m'
-)
 
-script_name() { basename "$0"; }
-date_time() { date +"%Y-%m-%d %T"; }
-
-log() { if [ ${config[is_logging]} -eq 1 ]; then echo "$@" >> "${config[log_file]}"; fi }
-
-msg() { echo "$(date_time) MSG: $@"; }
-err() { echo -e "${systemColors[red]}$(date_time) ERROR: $@${systemColors[no]}" >&2; }
-info() { echo -e "${systemColors[orange]}$(date_time) INFO: $@${systemColors[no]}" >&1; }
-succ() { echo -e "${systemColors[green]}$(date_time) SUCCESS: $@${systemColors[no]}" >&1; }
+fdebug() { if [ ${config[is_debugging]} -eq 1 ]; then echo "$@" >> "${config[debug_file]}"; fi }
 
 start() {
-    info "Starting server on ${config[ip]}:${config[port]}"
-    tcpserver "${config[ip]}" "${config[port]}" "./$(script_name)" connection_handler
+    local script_path=$0
+    fdebug $script_path
+
+    console__info "Starting server on ${config[ip]}:${config[port]}"
+
+    tcpserver "${config[ip]}" "${config[port]}" "./$script_path" connection_handler
 }
 
-
-SERVER_REQUEST_PROTOCOL="HTTP/1.1"
+# SERVER constants
+SERVER_HTTP_PROTOCOL="HTTP/1.1"
 declare -A SERVER_REQUEST_METHODS=(
     [HEAD]=HEAD
     [GET]=GET
@@ -45,23 +37,29 @@ declare -A SERVER_RESPONSES=(
     [500]="Internal Server Error"
 )
 
-
+# REQUEST vars
+REQUEST_METHOD=
+REQUEST_ROUTE=
+REQUEST_PROTOCOL=
 declare -A REQUEST_HEADERS
-declare -A RESPONSE_HEADERS
+REQUEST_BODY=
 
-# Include routes array
-source routes
+
+# RESPONSE vars
+declare -A RESPONSE_HEADERS
+RESPONSE_CODE=404
+RESPONSE_MESSAGE_BODY=
 
 
 request() {
-    log "Request begin"
+    fdebug "Request begin"
 
     # Read start line
     read -t "${config[timeout]}" -r request_start_line
 
-    start_line="$(echo $request_start_line| tr -d '\r')"
+    local start_line="$(echo $request_start_line| tr -d '\r')"
     if (($(echo $start_line | wc -w) != 3)); then
-        log "400 (Bad Request)"
+        fdebug "400 (Bad Request)"
 
         response 400
 
@@ -69,8 +67,8 @@ request() {
     fi
 
     REQUEST_PROTOCOL="$(echo $start_line| cut -d ' ' -f 3)"
-    if [ $REQUEST_PROTOCOL != $SERVER_REQUEST_PROTOCOL ]; then
-        log "400 (Bad Request)"
+    if [ $REQUEST_PROTOCOL != $SERVER_HTTP_PROTOCOL ]; then
+        fdebug "400 (Bad Request)"
         
         response 400
 
@@ -79,7 +77,7 @@ request() {
 
     REQUEST_METHOD="$(echo $start_line| cut -d ' ' -f 1)"
     if [ ! ${SERVER_REQUEST_METHODS[$REQUEST_METHOD]} ]; then
-        log "405 (Method Not Allowed)"
+        fdebug "405 (Method Not Allowed)"
 
         response 405
 
@@ -88,9 +86,9 @@ request() {
 
     REQUEST_ROUTE="$(echo $start_line| cut -d ' ' -f 2| tr /A-Z/ /a-z/)"
 
-    log "route: $REQUEST_ROUTE"
-    log "method: $REQUEST_METHOD"
-    log "protocol: $REQUEST_PROTOCOL"
+    fdebug "route: $REQUEST_ROUTE"
+    fdebug "method: $REQUEST_METHOD"
+    fdebug "protocol: $REQUEST_PROTOCOL"
 
 
     # Read headers
@@ -105,7 +103,7 @@ request() {
 
         REQUEST_HEADERS[$header_key]=$header_value
 
-        log "header: [$header_key]=$header_value"
+        fdebug "header: [$header_key]=$header_value"
     done
 
     # Read message-body if Content-Length header is presented
@@ -116,40 +114,54 @@ request() {
         # Cut data from buffer with length specified
         REQUEST_BODY="$(printf "%s" $REQUEST_BODY| tr -d '\r'| cut -c -${REQUEST_HEADERS[Content-Length]})"
 
-        log "body: $REQUEST_BODY"
+        fdebug "body: $REQUEST_BODY"
     fi
 
-    log "Request end"
+    fdebug "Request end"
+}
+
+throw_json_msg_by_code() {
+    local status_code=$1
+
+    RESPONSE_HEADERS[Content-Type]="application/json"
+    RESPONSE_MESSAGE_BODY="$(printf "{code: %d, message: %s}" "$status_code" "${SERVER_RESPONSES[$status_code]}")"
+
+    setContentLength
 }
 
 response() {
-    status_code=$1
+    local status_code=$1
     # if [ ! ${SERVER_RESPONSES[$status_code]} ]; then
     #     status_code=500
     # fi
 
-    status_line="$(printf "%s %u %s" "$SERVER_REQUEST_PROTOCOL" "$status_code" "${SERVER_RESPONSES[$status_code]}")"
+    local status_line="$(printf "%s %u %s" "$SERVER_HTTP_PROTOCOL" "$status_code" "${SERVER_RESPONSES[$status_code]}")"
     RESPONSE_HEADERS[Server]="${config[server_name]}"
-    RESPONSE_HEADERS[Date]="$(date_time)"
+    RESPONSE_HEADERS[Date]="$(console__datetime)"
     RESPONSE_HEADERS[Connection]=close
+
+    # todo if lt 200 and gt 299
+    if [ $status_code -ne 200 ]; then
+        throw_json_msg_by_code $status_code
+    fi
 
     # send response
     echo -n "$status_line"
     echo -en "\r\n"
-    response_headers_string=""
+    local response_headers_string=""
     for key in "${!RESPONSE_HEADERS[@]}"; do
         echo -en "$key: "${RESPONSE_HEADERS["$key"]}"\r\n"
         response_headers_string+="$key: "${RESPONSE_HEADERS["$key"]}"; "
     done
     echo -en "\r\n"
-    echo -n "$response_message_body"
+    echo -n "$RESPONSE_MESSAGE_BODY"
     echo -en "\r\n"
 
-    log "Response begin"
-    log "status-line: $status_line"
-    log "headers: $response_headers_string"
-    log "message-body: $response_message_body"
-    log "Response end"
+    fdebug "Response begin"
+    fdebug "status-line: $status_line"
+    fdebug "headers: $response_headers_string"
+    fdebug "message-body: $RESPONSE_MESSAGE_BODY"
+    fdebug "Response end"
 }
 
 try_route() {
@@ -158,16 +170,17 @@ try_route() {
 }
 
 setFileMesageBody() {
-    response_message_body="$(<"$1")"
+    RESPONSE_MESSAGE_BODY="$(<"$1")"
 }
 
-setFileContentLength() {
-    RESPONSE_HEADERS[Content-Length]="$(wc -c <"$1")"
+setContentLength() {
+    RESPONSE_HEADERS[Content-Length]="$(echo -n "$RESPONSE_MESSAGE_BODY"| wc -c)"
 }
 
 setFileContentType() {
-    extension="$(basename $1| rev | cut -d . -f 1 | rev)"
+    local extension="$(basename $1| rev | cut -d . -f 1 | rev)"
 
+    # todo images fonts etc
     case "$extension" in
         css) type="text/css" ;;
         js) type="text/javascript" ;;
@@ -179,10 +192,10 @@ setFileContentType() {
 }
 
 try_file() {
-    root="${config[web_root]}"
-    path="$REQUEST_ROUTE"
+    local root="${config[web_root]}"
+    local path="$REQUEST_ROUTE"
 
-    target="$root$path"
+    local target="$root$path"
 
     if [ -d $target ]; then
         target+="/index.html"
@@ -191,30 +204,20 @@ try_file() {
     if [ -f $target ]; then
         setFileMesageBody "$target"
         setFileContentType "$target"
-        setFileContentLength "$target"
+        setContentLength
         
-        return 200
+        RESPONSE_CODE=200
+
+        return
     fi
 
     return -1
 }
 
-try_request() {
-    try_route || try_file
-    status=$?
-    log $LINENO $status
-
-    if [ $status -eq -1 ]; then
-        return 404
-    fi
-    
-    return $status
-}
-
 connection_handler() {
     request
-    try_request
-    response $?
+    try_route || try_file
+    response $RESPONSE_CODE
 }
 
 $@

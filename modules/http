@@ -1,6 +1,6 @@
 # MODULE: http
 
-source modules/config
+source config/config
 source modules/debug
 
 # const

@@ -55,7 +55,7 @@ http__request() {
     if (($(echo $start_line | wc -w) != 3)); then
         debug__toFile "400 (Bad Request)"
 
-        response 400
+        http__response 400
 
         exit 0
     fi
@@ -64,7 +64,7 @@ http__request() {
     if [ $http__req_protocol != $http__PROTOCOL_VER ]; then
         debug__toFile "400 (Bad Request)"
         
-        response 400
+        http__response 400
 
         exit 0
     fi
@@ -73,7 +73,7 @@ http__request() {
     if [ ! ${http__METHODS[$http__req_method]} ]; then
         debug__toFile "405 (Method Not Allowed)"
 
-        response 405
+        http__response 405
 
         exit 0
     fi

@@ -1,9 +1,10 @@
 declare -A config=(
+  [debug_on]=0
+  [debug_file]=log
+
+  [server_name]=bashttp
   [ip]=127.0.0.1
   [port]=3000
   [timeout]=10
-  [is_debugging]=0
-  [debug_file]=log
-  [server_name]=bashttp
   [web_root]=./web
 )

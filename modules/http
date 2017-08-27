@@ -1,0 +1,215 @@
+# MODULE: http
+
+source modules/config
+source modules/debug
+
+# const
+
+http__PROTOCOL_VER="HTTP/1.1"
+
+declare -A http__METHODS=(
+    [HEAD]=HEAD
+    [GET]=GET
+    [POST]=POST
+    [PUT]=PUT
+    [DELETE]=DELETE
+    [CONNECT]=CONNECT
+    [OPTIONS]=OPTIONS
+    [TRACE]=TRACE
+    [PATCH]=PATCH
+)
+
+declare -A http__RESPONSES=(
+    [200]=OK
+    [400]="Bad Request"
+    [401]=Unauthorized
+    [403]=Forbidden
+    [404]="Not Found"
+    [405]="Method Not Allowed"
+    [500]="Internal Server Error"
+)
+
+# var
+
+http__req_protocol=
+http__req_method=
+http__req_route=
+http__req_body=
+http__res_code=
+http__res_body=
+
+declare -A http__req_headers
+declare -A http__res_headers
+
+# func
+
+http__request() {
+    debug__toFile "Request begin"
+
+    local request_start_line=
+
+    # Read start line
+    read -t "${config[timeout]}" -r request_start_line
+
+    local start_line="$(echo $request_start_line| tr -d '\r')"
+    if (($(echo $start_line | wc -w) != 3)); then
+        debug__toFile "400 (Bad Request)"
+
+        response 400
+
+        exit 0
+    fi
+
+    http__req_protocol="$(echo $start_line| cut -d ' ' -f 3)"
+    if [ $http__req_protocol != $http__PROTOCOL_VER ]; then
+        debug__toFile "400 (Bad Request)"
+        
+        response 400
+
+        exit 0
+    fi
+
+    http__req_method="$(echo $start_line| cut -d ' ' -f 1)"
+    if [ ! ${http__METHODS[$http__req_method]} ]; then
+        debug__toFile "405 (Method Not Allowed)"
+
+        response 405
+
+        exit 0
+    fi
+
+    http__req_route="$(echo $start_line| cut -d ' ' -f 2| tr /A-Z/ /a-z/)"
+
+    debug__toFile "route: $http__req_route"
+    debug__toFile "method: $http__req_method"
+    debug__toFile "protocol: $REQUEST_PROTOCOL"
+
+
+    # Read headers
+    while read -t "${config[timeout]}" -r request_header; do
+        header="$(echo $request_header| tr -d '\r')"
+
+        # break on empty string
+        [ -z "$header" ] && break
+
+        header_key="$(echo $header| cut -d ':' -f 1)"
+        header_value="$(echo $header| cut -d ' ' -f 2-)"
+
+        http__req_headers[$header_key]=$header_value
+
+        debug__toFile "header: [$header_key]=$header_value"
+    done
+
+    # Read message-body if Content-Length header is presented
+    if [ ${http__req_headers[Content-Length]} ]; then
+        # Read message-body to buffer
+        read -t "${config[timeout]}" -r http__req_body
+
+        # Cut data from buffer with length specified
+        http__req_body="$(printf "%s" $http__req_body| tr -d '\r'| cut -c -${http__req_headers[Content-Length]})"
+
+        debug__toFile "body: $http__req_body"
+    fi
+
+    debug__toFile "Request end"
+}
+
+http__throw_json_msg_by_code() {
+    local status_code=$1
+
+    http__res_headers[Content-Type]="application/json"
+    http__res_body="$(printf "{code: %d, message: %s}" "$status_code" "${http__RESPONSES[$status_code]}")"
+
+    setContentLength
+}
+
+http__response() {
+    local status_code="$http__res_code"
+    # if [ ! ${http__RESPONSES[$status_code]} ]; then
+    #     status_code=500
+    # fi
+
+    local status_line="$(printf "%s %u %s" "$http__PROTOCOL_VER" "$status_code" "${http__RESPONSES[$status_code]}")"
+    http__res_headers[Server]="${config[server_name]}"
+    http__res_headers[Date]="$(console__datetime)"
+    http__res_headers[Connection]=close
+
+    # todo if lt 200 and gt 299
+    if [ $status_code -ne 200 ]; then
+        http__throw_json_msg_by_code $status_code
+    fi
+
+    # send response
+    echo -n "$status_line"
+    echo -en "\r\n"
+    local response_headers_string=""
+    for key in "${!http__res_headers[@]}"; do
+        echo -en "$key: "${http__res_headers["$key"]}"\r\n"
+        response_headers_string+="$key: "${http__res_headers["$key"]}"; "
+    done
+    echo -en "\r\n"
+    echo -n "$http__res_body"
+    echo -en "\r\n"
+
+    debug__toFile "Response begin"
+    debug__toFile "status-line: $status_line"
+    debug__toFile "headers: $response_headers_string"
+    debug__toFile "message-body: $http__res_body"
+    debug__toFile "Response end"
+}
+
+http__try_route() {
+    http__res_code=404
+
+    # To do
+    return -1
+}
+
+http__setMesageBodyForFile() {
+    http__res_body="$(<"$1")"
+}
+
+http__setContentLength() {
+    http__res_headers[Content-Length]="$(echo -n "$http__res_body"| wc -c)"
+}
+
+http__setContentTypeForFile() {
+    local extension="$(basename $1| rev | cut -d . -f 1 | rev)"
+
+    # todo images fonts etc
+    case "$extension" in
+        css) type="text/css" ;;
+        js) type="text/javascript" ;;
+        json) type="application/json" ;;
+        *) type="$<(file -b --mime-type "$1")" ;;
+    esac
+
+    http__res_headers[Content-Type]=type
+}
+
+http__try_file() {
+    http__res_code=404
+
+    local root="${config[web_root]}"
+    local path="$http__req_route"
+
+    local target="$root$path"
+
+    if [ -d $target ]; then
+        target+="/index.html"
+    fi
+
+    if [ -f $target ]; then
+        http__setMesageBodyForFile "$target"
+        http__setContentTypeForFile "$target"
+        http__setContentLength
+        
+        http__res_code=200
+
+        return
+    fi
+
+    return -1
+}
+
+# END

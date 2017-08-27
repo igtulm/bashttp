@@ -1,0 +1,13 @@
+# MODULE: debug
+
+source modules/config
+
+# const
+
+# var
+
+# func
+
+debug__toFile() { if [ ${config[debug_on]} -eq 1 ]; then echo "$@" >> "${config[debug_file]}"; fi }
+
+# END

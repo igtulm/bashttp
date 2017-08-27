@@ -1,0 +1,45 @@
+Request begin
+Request begin
+route: /asd
+method: GET
+protocol: 
+header: [Host]=127.0.0.1:3000
+header: [Connection]=keep-alive
+header: [Upgrade-Insecure-Requests]=1
+header: [User-Agent]=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/59.0.3071.109 Chrome/59.0.3071.109 Safari/537.36
+header: [Accept]=text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+header: [Accept-Encoding]=gzip, deflate, br
+header: [Accept-Language]=en-GB,en;q=0.8,en-US;q=0.6,ru;q=0.4
+header: [Cookie]=grafana_user=admin; grafana_remember=47b9e74efe01ca5e1429deaa20c9f55c985896081caf5e3fc9da7c97616e06ba93
+header: [X-Compress]=null
+Request end
+Response begin
+status-line: HTTP/1.1 404 Not Found
+headers: Connection: close; Server: bashttp; Content-Type: application/json; Date: 2017-08-27 18:49:35; 
+message-body: {code: 404, message: Not Found}
+Response end
+Request begin
+route: /asd
+method: GET
+protocol: 
+header: [Host]=127.0.0.1:3000
+header: [Connection]=keep-alive
+header: [Upgrade-Insecure-Requests]=1
+header: [User-Agent]=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/59.0.3071.109 Chrome/59.0.3071.109 Safari/537.36
+header: [Accept]=text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+header: [Accept-Encoding]=gzip, deflate, br
+header: [Accept-Language]=en-GB,en;q=0.8,en-US;q=0.6,ru;q=0.4
+header: [Cookie]=grafana_user=admin; grafana_remember=47b9e74efe01ca5e1429deaa20c9f55c985896081caf5e3fc9da7c97616e06ba93
+header: [X-Compress]=null
+Request end
+Response begin
+status-line: HTTP/1.1 404 Not Found
+headers: Connection: close; Server: bashttp; Content-Type: application/json; Date: 2017-08-27 18:49:35; 
+message-body: {code: 404, message: Not Found}
+Response end
+400 (Bad Request)
+Response begin
+status-line: HTTP/1.1 0 
+headers: Connection: close; Server: bashttp; Date: 2017-08-27 18:49:45; 
+message-body: 
+Response end

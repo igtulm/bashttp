@@ -120,7 +120,7 @@ http__throw_json_msg_by_code() {
     http__res_headers[Content-Type]="application/json"
     http__res_body="$(printf "{code: %d, message: %s}" "$status_code" "${http__RESPONSES[$status_code]}")"
 
-    setContentLength
+    http__setContentLength
 }
 
 http__response() {

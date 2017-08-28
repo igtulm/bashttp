@@ -4,5 +4,5 @@ TBC
 
 Before start execute `sudo apt-get install ucspi-tcp`
 
-Run: ./bashttp start
+Run: ./app start
 

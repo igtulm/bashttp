@@ -1,6 +1,6 @@
 declare -A config=(
   [debug_on]=1
-  [debug_file]=./log/log
+  [debug_file]=./log/debug.log
 
   [server_name]=bashttp
   [ip]=127.0.0.1

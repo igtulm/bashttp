@@ -1,8 +1,8 @@
 #!/bin/bash
 
-source config/config
-source modules/console
-source modules/http
+. config/config
+. modules/console
+. modules/http
 
 start() {
     local script_path=$0

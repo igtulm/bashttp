@@ -1,6 +1,6 @@
 # MODULE: debug
 
-source config/config
+. config/config
 
 # const
 

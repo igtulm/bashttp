@@ -1,7 +1,7 @@
 # MODULE: http
 
-source config/config
-source modules/debug
+. config/config
+. modules/debug
 
 # const
 

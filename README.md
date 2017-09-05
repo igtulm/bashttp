@@ -1,8 +1,21 @@
-A web server which is written in Bash
+# Bash Http
+> A web server which is written in Bash
 
-TBC
+Run
+===
 
-Before start execute `sudo apt-get install ucspi-tcp`
+This application uses [ucspi-tcp](https://en.wikipedia.org/wiki/Ucspi-tcp) for socket listening.
 
-Run: ./app start
+Ubuntu
+------
+
+1) Before running execute `sudo apt-get install ucspi-tcp`
+2) Run the application: `./app start`
+
+Docker
+------
+
+1) Change your directory to the application root
+2) Build a container `docker build -t bashttp`
+2) Run the application in the container: `docker run --rm -ti -v $(pwd):/usr/src/app -w /usr/src/app -p 3000:3000 bashttp`
 

@@ -1,8 +1,13 @@
 #!/bin/bash
 
 . config/config
+
 . modules/console
+. modules/debug
 . modules/http
+
+debug__on="${config[debug_on]}"
+debug__file="${config[debug_file]}"
 
 start() {
     local script_path=$0

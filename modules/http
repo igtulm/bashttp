@@ -72,6 +72,7 @@ http__request() {
     http__req_route="$(echo $start_line| cut -d ' ' -f 2| tr /A-Z/ /a-z/)"
 
     # Read headers
+    # TODO: if there is no Host at first header then throw msg and close connection instantly without iterations more
     while read -t "${config[timeout]}" -r request_header; do
         header="$(echo $request_header| tr -d '\r')"
 
@@ -105,17 +106,17 @@ http__throw_json_msg_by_code() {
 
 http__response() {
     local status_code="$http__res_code"
-    # if [ ! ${http__RESPONSES[$status_code]} ]; then
-    #     status_code=500
-    # fi
+    if [ ! ${http__RESPONSES[$status_code]} ]; then
+        status_code=500
+        http__throw_json_msg_by_code $status_code
+    fi
 
     local status_line="$(printf "%s %u %s" "$http__PROTOCOL_VER" "$status_code" "${http__RESPONSES[$status_code]}")"
     http__res_headers[Server]="${config[server_name]}"
-    http__res_headers[Date]="$(console__datetime)"
+    http__res_headers[Date]="$(date +"%Y-%m-%d %T")"
     http__res_headers[Connection]=close
 
-    # todo if lt 200 and gt 299
-    if [ $status_code -ne 200 ]; then
+    if (($status_code < 200)) || (($status_code >= 300)); then
         http__throw_json_msg_by_code $status_code
     fi
 

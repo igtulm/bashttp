@@ -1,13 +1,14 @@
 # MODULE: debug
 
-. config/config
-
 # const
 
 # var
 
+debug__on=0
+debug__file=/dev/null
+
 # func
 
-debug__toFile() { if [ ${config[debug_on]} -eq 1 ]; then echo "$@" >> "${config[debug_file]}"; fi }
+debug__toFile() { if [ $debug__on -eq 1 ]; then echo "$@" >> "$debug__file"; fi }
 
 # END

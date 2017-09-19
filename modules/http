@@ -1,7 +1,6 @@
 # MODULE: http
 
 . config/config
-. modules/debug
 
 # const
 
@@ -44,8 +43,6 @@ declare -A http__res_headers
 # func
 
 http__request() {
-    debug__toFile "Request begin"
-
     local request_start_line=
 
     # Read start line
@@ -53,8 +50,6 @@ http__request() {
 
     local start_line="$(echo $request_start_line| tr -d '\r')"
     if (($(echo $start_line | wc -w) != 3)); then
-        debug__toFile "400 (Bad Request)"
-
         http__response 400
 
         exit 0
@@ -62,8 +57,6 @@ http__request() {
 
     http__req_protocol="$(echo $start_line| cut -d ' ' -f 3)"
     if [ $http__req_protocol != $http__PROTOCOL_VER ]; then
-        debug__toFile "400 (Bad Request)"
-        
         http__response 400
 
         exit 0
@@ -71,19 +64,12 @@ http__request() {
 
     http__req_method="$(echo $start_line| cut -d ' ' -f 1)"
     if [ ! ${http__METHODS[$http__req_method]} ]; then
-        debug__toFile "405 (Method Not Allowed)"
-
         http__response 405
 
         exit 0
     fi
 
     http__req_route="$(echo $start_line| cut -d ' ' -f 2| tr /A-Z/ /a-z/)"
-
-    debug__toFile "route: $http__req_route"
-    debug__toFile "method: $http__req_method"
-    debug__toFile "protocol: $REQUEST_PROTOCOL"
-
 
     # Read headers
     while read -t "${config[timeout]}" -r request_header; do
@@ -96,8 +82,6 @@ http__request() {
         header_value="$(echo $header| cut -d ' ' -f 2-)"
 
         http__req_headers[$header_key]=$header_value
-
-        debug__toFile "header: [$header_key]=$header_value"
     done
 
     # Read message-body if Content-Length header is presented
@@ -107,11 +91,7 @@ http__request() {
 
         # Cut data from buffer with length specified
         http__req_body="$(printf "%s" $http__req_body| tr -d '\r'| cut -c -${http__req_headers[Content-Length]})"
-
-        debug__toFile "body: $http__req_body"
     fi
-
-    debug__toFile "Request end"
 }
 
 http__throw_json_msg_by_code() {
@@ -150,12 +130,6 @@ http__response() {
     echo -en "\r\n"
     echo -n "$http__res_body"
     echo -en "\r\n"
-
-    debug__toFile "Response begin"
-    debug__toFile "status-line: $status_line"
-    debug__toFile "headers: $response_headers_string"
-    debug__toFile "message-body: $http__res_body"
-    debug__toFile "Response end"
 }
 
 http__try_route() {

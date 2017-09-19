@@ -176,7 +176,6 @@ http__setContentLength() {
 http__setContentTypeForFile() {
     local extension="$(basename $1| rev | cut -d . -f 1 | rev)"
 
-    # todo images fonts etc
     case "$extension" in
         aac) type="audio/aac";;
         abw) type="application/x-abiword";;

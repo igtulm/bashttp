@@ -178,9 +178,66 @@ http__setContentTypeForFile() {
 
     # todo images fonts etc
     case "$extension" in
-        css) type="text/css" ;;
-        js) type="text/javascript" ;;
-        json) type="application/json" ;;
+        aac) type="audio/aac";;
+        abw) type="application/x-abiword";;
+        arc) type="application/octet-stream";;
+        avi) type="video/x-msvideo";;
+        azw) type="application/vnd.amazon.ebook";;
+        bin) type="application/octet-stream";;
+        bz) type="application/x-bzip";;
+        bz2) type="application/x-bzip2";;
+        csh) type="application/x-csh";;
+        css) type="text/css";;
+        csv) type="text/csv";;
+        doc) type="application/msword";;
+        eot) type="application/vnd.ms-fontobject";;
+        epub) type="application/epub+zip";;
+        gif) type="image/gif";;
+        htm) type="text/html";;
+        html) type="text/html";;
+        ico) type="image/x-icon";;
+        ics) type="text/calendar";;
+        jar) type="application/java-archive";;
+        jpeg) type="image/jpeg";;
+        jpg) type="image/jpeg";;
+        js) type="application/javascript";;
+        json) type="application/json";;
+        midi) type="audio/midi";;
+        mpeg) type="video/mpeg";;
+        mpkg) type="application/vnd.apple.installer+xml";;
+        odp) type="application/vnd.oasis.opendocument.presentation";;
+        ods) type="application/vnd.oasis.opendocument.spreadsheet";;
+        odt) type="application/vnd.oasis.opendocument.text";;
+        oga) type="audio/ogg";;
+        ogv) type="video/ogg";;
+        ogx) type="application/ogg";;
+        otf) type="font/otf";;
+        png) type="image/png";;
+        pdf) type="application/pdf";;
+        ppt) type="application/vnd.ms-powerpoint";;
+        rar) type="application/x-rar-compressed";;
+        rtf) type="application/rtf";;
+        sh) type="application/x-sh";;
+        svg) type="image/svg+xml";;
+        swf) type="application/x-shockwave-flash";;
+        tar) type="application/x-tar";;
+        tiff) type="image/tiff";;
+        ts) type="video/vnd.dlna.mpeg-tts";;
+        ttf) type="font/ttf";;
+        vsd) type="application/vnd.visio";;
+        wav) type="audio/x-wav";;
+        weba) type="audio/webm";;
+        webm) type="video/webm";;
+        webp) type="image/webp";;
+        woff) type="font/woff";;
+        woff2) type="font/woff2";;
+        xhtml) type="application/xhtml+xml";;
+        xls) type="application/vnd.ms-excel";;
+        xml) type="application/xml";;
+        xul) type="application/vnd.mozilla.xul+xml";;
+        zip) type="application/zip";;
+        7z) type="application/x-7z-compressed";;
+
         *) type="$<(file -b --mime-type "$1")" ;;
     esac
 

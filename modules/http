@@ -40,13 +40,18 @@ http__res_body=
 declare -A http__req_headers
 declare -A http__res_headers
 
+http__server_name=""
+http__timeout=3000
+http__serve_dir="./"
+
+
 # func
 
 http__request() {
     local request_start_line=
 
     # Read start line
-    read -t "${config[timeout]}" -r request_start_line
+    read -t "$http__timeout" -r request_start_line
 
     local start_line="$(echo $request_start_line| tr -d '\r')"
     if (($(echo $start_line | wc -w) != 3)); then
@@ -73,7 +78,7 @@ http__request() {
 
     # Read headers
     # TODO: if there is no Host at first header then throw msg and close connection instantly without iterations more
-    while read -t "${config[timeout]}" -r request_header; do
+    while read -t "$http__timeout" -r request_header; do
         header="$(echo $request_header| tr -d '\r')"
 
         # break on empty string
@@ -234,7 +239,7 @@ http__try_file() {
         http__setMesageBodyForFile "$target"
         http__setContentTypeForFile "$target"
         http__setContentLength
-        
+
         http__res_code=200
 
         return

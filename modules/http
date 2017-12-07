@@ -220,7 +220,7 @@ http__setContentTypeForFile() {
         *) type="$<(file -b --mime-type "$1")" ;;
     esac
 
-    http__res_headers[Content-Type]=type
+    http__res_headers[Content-Type]="$type"
 }
 
 http__try_file() {

@@ -1,7 +1,5 @@
 # MODULE: http
 
-. config/config
-
 # const
 
 http__PROTOCOL_VER="HTTP/1.1"
@@ -110,11 +108,21 @@ http__throw_json_msg_by_code() {
 }
 
 http__response() {
-    local status_code="$http__res_code"
-    if [ ! ${http__RESPONSES[$status_code]} ]; then
-        status_code=500
-        http__throw_json_msg_by_code $status_code
+    local root="${config[web_root]}"
+    local path="$http__req_route"
+
+    local target="$root$path"
+
+    if [ -d $target ]; then
+        target+="index.html"
     fi
+
+    # TODO check if target doesn't exist
+
+    debug__toFile $target
+
+    http__res_code=200
+    local status_code="$http__res_code"
 
     local status_line="$(printf "%s %u %s" "$http__PROTOCOL_VER" "$status_code" "${http__RESPONSES[$status_code]}")"
     http__res_headers[Server]="${config[server_name]}"
@@ -134,7 +142,9 @@ http__response() {
         response_headers_string+="$key: "${http__res_headers["$key"]}"; "
     done
     echo -en "\r\n"
-    echo -n "$http__res_body"
+
+    cat "$target"
+
     echo -en "\r\n"
 }
 
@@ -147,9 +157,11 @@ http__try_route() {
 
 http__setMesageBodyForFile() {
     http__res_body="$(<"$1")"
+    http__res_headers[Content-Length]="$(stat -c %s $1)"
 }
 
 http__setContentLength() {
+    return
     http__res_headers[Content-Length]="$(echo -n "$http__res_body"| wc -c)"
 }
 
@@ -217,7 +229,7 @@ http__setContentTypeForFile() {
         zip) type="application/zip";;
         7z) type="application/x-7z-compressed";;
 
-        *) type="$<(file -b --mime-type "$1")" ;;
+        *) type="$(file -ib "$1")" ;;
     esac
 
     http__res_headers[Content-Type]="$type"

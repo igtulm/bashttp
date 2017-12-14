@@ -1,0 +1,13 @@
+body {
+    background-color: white;
+}
+
+.text {
+    font-size: 150px;
+}
+
+.btn {
+    width: 200px;
+    height: 80px;
+    margin-top: 50px;
+}

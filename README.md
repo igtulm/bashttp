@@ -26,4 +26,3 @@ TODO
 ====
 
 The main idea of the project is a simple API implementation. I am moving towards this direction now.
-

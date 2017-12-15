@@ -1,5 +1,5 @@
 # Bash Http
-> A web server which is written in Bash
+> A web server written in Bash
 
 Run
 ===

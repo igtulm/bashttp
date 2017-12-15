@@ -1,10 +1,10 @@
 #!/bin/bash
 
-. config/config
+. config/config.sh
 
-. modules/console
-. modules/debug
-. modules/http
+. modules/console.sh
+. modules/debug.sh
+. modules/http.sh
 
 debug__on="${config[debug_on]}"
 debug__file="${config[debug_file]}"

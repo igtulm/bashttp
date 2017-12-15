@@ -11,7 +11,7 @@ Ubuntu
 
 1) Before running execute `sudo apt-get install ucspi-tcp`
 2) Change your directory to the application root
-3) Run the application: `./app start`
+3) Run the application: `./app.sh start`
 4) Run benchmarking: `./bench.sh`
 
 Docker
@@ -19,7 +19,7 @@ Docker
 
 1) Change your directory to the application root
 2) Build a container `docker build -t bashttp .`
-3) Run the application in the container: `docker run --rm -ti -v $(pwd):/usr/src/app -w /usr/src/app -p 3000:3000 bashttp ./app start`
+3) Run the application in the container: `docker run --rm -ti -v $(pwd):/usr/src/app -w /usr/src/app -p 3000:3000 bashttp ./app.sh start`
 4) Run benchmarking in the container: `docker run --rm -ti -v $(pwd):/usr/src/app -w /usr/src/app -p 3000:3000 bashttp ./bench.sh`
 
 TODO

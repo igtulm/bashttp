@@ -1,6 +1,13 @@
 # Bash Http
 > A web server written in Bash
 
+Description
+===========
+
+A simple command-line http server written in Bash. It is useful for testing and local development.
+It could be run everywhere where Bash is used.
+There is no need to install hude dependencies or programming languages.
+
 Run
 ===
 

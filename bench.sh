@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nohup ./app start &
+nohup ./app.sh start &
 
 cd web
 

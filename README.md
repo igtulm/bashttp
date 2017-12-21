@@ -12,7 +12,6 @@ Ubuntu
 1) Before running execute `sudo apt-get install ucspi-tcp`
 2) Change your directory to the application root
 3) Run the application: `./app.sh start`
-4) Run benchmarking: `./bench.sh`
 
 Docker
 ------
